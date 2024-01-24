@@ -1,199 +1,117 @@
 import 'package:flutter/material.dart';
 
-final List<int> _items = List<int>.generate(10, (int index) => index);
-
-void main() => runApp(const MyApp());
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class Calculator extends StatefulWidget {
+  const Calculator({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xff6750a4),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(),
-    );
-  }
+  _CalculatorState createState() => _CalculatorState();
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  bool shadowColor = false;
-  double? scrolledUnderElevation;
-  bool switchValue = false;
-  double sliderValue = 0.0;
-  TextEditingController textFieldController = TextEditingController();
+class _CalculatorState extends State<Calculator> {
+  String equation = '0';
+  String result = '0';
+  String operator = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('RODRIGO SANTANA'),
-        scrolledUnderElevation: scrolledUnderElevation,
-        shadowColor: shadowColor ? Theme.of(context).colorScheme.shadow : null,
+        title: const Text('Calculator'),
       ),
-      body: buildGridView(),
-      bottomNavigationBar: buildBottomAppBar(),
-      floatingActionButton: buildFloatingActionButton(),
-    );
-  }
-
-  Widget buildGridView() {
-    return GridView.builder(
-      itemCount: _items.length,
-      padding: const EdgeInsets.all(8.0),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 2.0,
-        mainAxisSpacing: 10.0,
-        crossAxisSpacing: 10.0,
-      ),
-      itemBuilder: (BuildContext context, int index) {
-        if (index == 0) {
-          return buildIntroText();
-        }
-        return buildGridItem(index);
-      },
-    );
-  }
-
-  Widget buildIntroText() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
         children: [
-          Text(
-            'Desplázate para ver la barra de aplicación en acción.',
-            style: Theme.of(context).textTheme.headline6,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-
-  Widget buildGridItem(int index) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color oddItemColor = colorScheme.primary.withOpacity(0.05);
-    final Color evenItemColor = colorScheme.primary.withOpacity(0.15);
-
-    return Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.0),
-        color: _items[index].isOdd ? oddItemColor : evenItemColor,
-      ),
-      child: Text('Item $index'),
-    );
-  }
-
-  Widget buildBottomAppBar() {
-    return BottomAppBar(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: OverflowBar(
-          overflowAlignment: OverflowBarAlignment.center,
-          alignment: MainAxisAlignment.center,
-          overflowSpacing: 5.0,
-          children: buildBottomAppBarChildren(),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> buildBottomAppBarChildren() {
-    return [
-      buildElevatedButton(),
-      const SizedBox(width: 5),
-      buildScrolledUnderElevationButton(),
-      const SizedBox(width: 5),
-      buildSwitch(),
-      const SizedBox(width: 5),
-      buildSlider(),
-      const SizedBox(width: 5),
-    ];
-  }
-
-  Widget buildElevatedButton() {
-    return ElevatedButton.icon(
-      onPressed: () {
-        setState(() {
-          shadowColor = !shadowColor;
-        });
-      },
-      icon: Icon(
-        shadowColor ? Icons.visibility_off : Icons.visibility,
-      ),
-      label: const Text('Color de sombra'),
-    );
-  }
-
-  Widget buildScrolledUnderElevationButton() {
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          scrolledUnderElevation = scrolledUnderElevation == null
-              ? 4.0
-              : scrolledUnderElevation! + 1.0;
-        });
-      },
-      child: Text(
-        'Scrolled Under Elevation: ${scrolledUnderElevation ?? 'predeterminado'}',
-      ),
-    );
-  }
-
-  Widget buildSwitch() {
-    return Switch(
-      value: switchValue,
-      onChanged: (value) {
-        setState(() {
-          switchValue = value;
-        });
-      },
-    );
-  }
-
-  Widget buildSlider() {
-    return Slider(
-      value: sliderValue,
-      onChanged: (value) {
-        setState(() {
-          sliderValue = value;
-        });
-      },
-      min: 0.0,
-      max: 100.0,
-      divisions: 10,
-      label: 'Valor del deslizador: $sliderValue',
-    );
-  }
-  Widget buildFloatingActionButton() {
-    return FloatingActionButton(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('¡Acción del botón flotante!'),
-            action: SnackBarAction(
-              label: 'Deshacer',
-              onPressed: () {
-                // Lógica para deshacer la acción
-              },
+          // Display for equation and result
+          Container(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                Text(equation, style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Text(result, style: const TextStyle(fontSize: 20)),
+              ],
             ),
           ),
-        );
-      },
-      child: const Icon(Icons.add),
+
+          // Grid of buttons for numbers and operators
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 4,
+              children: [
+                // Numbers
+                for (int i = 0; i <= 9; i++)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        equation += i.toString();
+                      });
+                    },
+                    child: Text(i.toString()),
+                  ),
+
+                // Operators
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      operator = '+';
+                    });
+                  },
+                  child: const Text('+'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      operator = '-';
+                    });
+                  },
+                  child: const Text('-'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      operator = '*';
+                    });
+                  },
+                  child: const Text('*'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      operator = '/';
+                    });
+                  },
+                  child: const Text('/'),
+                ),
+
+                // Equals button
+                TextButton(
+                  onPressed: () {
+                    // Calculate the result
+                    double num1 = double.parse(equation.substring(0, equation.length - 1));
+                    double num2 = double.parse(equation.substring(equation.length - 1));
+                    switch (operator) {
+                      case '+':
+                        result = num1 + num2.toString();
+                        break;
+                      case '-':
+                        result = num1 - num2.toString();
+                        break;
+                      case '*':
+                        result = num1 * num2.toString();
+                        break;
+                      case '/':
+                        result = num1 / num2.toString();
+                        break;
+                    }
+                    // Clear the equation
+                    equation = '';
+                  },
+                  child: const Text('='),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
