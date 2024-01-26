@@ -1,117 +1,129 @@
 import 'package:flutter/material.dart';
 
-class Calculator extends StatefulWidget {
-  const Calculator({Key? key}) : super(key: key);
-
-  @override
-  _CalculatorState createState() => _CalculatorState();
+void main() {
+  runApp(MyApp());
 }
 
-class _CalculatorState extends State<Calculator> {
-  String equation = '0';
-  String result = '0';
-  String operator = '';
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Lista RSL',
+      home: MyHomePage(),
+    );
+  }
+}
+
+class Actividad {
+  String descripcion;
+  bool completada;
+
+  Actividad({required this.descripcion, this.completada = false});
+}
+
+class MyHomePage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  final List<Actividad> actividades = [];
+  final TextEditingController _textController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calculator'),
+        title: Text('Pendientes'),
       ),
-      body: Column(
-        children: [
-          // Display for equation and result
-          Container(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                Text(equation, style: const TextStyle(fontSize: 20)),
-                const SizedBox(width: 10),
-                Text(result, style: const TextStyle(fontSize: 20)),
-              ],
+      body: ListView.builder(
+        itemCount: actividades.length,
+        itemBuilder: (context, index) {
+          return Dismissible(
+            direction: DismissDirection.horizontal,
+            background: Container(
+              color: Colors.blue,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.delete),
+                ],
+              ),
             ),
-          ),
+            onDismissed: (direction) {
+              actividades.removeAt(index);
+              setState(() {});
+            },
+            key: Key(actividades[index].descripcion), 
+            child: ListTile(
+              title: Text(
+                actividades[index].descripcion,
+                style: TextStyle(
+                  decoration: actividades[index].completada
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  color: const Color.fromARGB(255, 0, 0, 0),
+                ),
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.check_box),
+                onPressed: () {
+                  marcarActividadComoCompletada(index);
+                },
+              ),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
 
-          // Grid of buttons for numbers and operators
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 4,
-              children: [
-                // Numbers
-                for (int i = 0; i <= 9; i++)
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Confirmar Actividad'),
+                content: TextField(
+                  controller: _textController,
+                  decoration: InputDecoration(labelText: 'Nueva actividad'),
+                ),
+                actions: <Widget>[
                   TextButton(
+                    child: Text('Cancelar'),
                     onPressed: () {
-                      setState(() {
-                        equation += i.toString();
-                      });
+                      Navigator.of(context).pop(); 
                     },
-                    child: Text(i.toString()),
                   ),
-
-                // Operators
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      operator = '+';
-                    });
-                  },
-                  child: const Text('+'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      operator = '-';
-                    });
-                  },
-                  child: const Text('-'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      operator = '*';
-                    });
-                  },
-                  child: const Text('*'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      operator = '/';
-                    });
-                  },
-                  child: const Text('/'),
-                ),
-
-                // Equals button
-                TextButton(
-                  onPressed: () {
-                    // Calculate the result
-                    double num1 = double.parse(equation.substring(0, equation.length - 1));
-                    double num2 = double.parse(equation.substring(equation.length - 1));
-                    switch (operator) {
-                      case '+':
-                        result = num1 + num2.toString();
-                        break;
-                      case '-':
-                        result = num1 - num2.toString();
-                        break;
-                      case '*':
-                        result = num1 * num2.toString();
-                        break;
-                      case '/':
-                        result = num1 / num2.toString();
-                        break;
-                    }
-                    // Clear the equation
-                    equation = '';
-                  },
-                  child: const Text('='),
-                ),
-              ],
-            ),
-          ),
-        ],
+                  TextButton(
+                    child: Text('Confirmar'),
+                    onPressed: () {
+                      agregarActividad();
+                      Navigator.of(context).pop(); 
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        tooltip: 'Agregar actividad',
+        child: Icon(Icons.add),
       ),
     );
+  }
+
+  void agregarActividad() {
+    final nuevaActividad = _textController.text;
+    if (nuevaActividad.isNotEmpty) {
+      actividades.add(Actividad(descripcion: nuevaActividad));
+      _textController.clear();
+      setState(() {});
+    }
+  }
+
+  void marcarActividadComoCompletada(int index) {
+    setState(() {
+      actividades[index].completada = !actividades[index].completada;
+    });
   }
 }
