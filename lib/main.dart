@@ -1,129 +1,118 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(MyApp());
+class Product {
+  Product({required this.name, required this.price});
+
+  final String name;
+  final double price;
 }
 
-class MyApp extends StatelessWidget {
+final _products = [
+  Product(name: "Spaghetti", price: 10),
+  Product(name: "Indomie", price: 6),
+  Product(name: "Fried Yam", price: 9),
+  Product(name: "Beans", price: 10),
+  Product(name: "Red Chicken feet", price: 2),
+];
+
+enum ProductSortType {
+  name,
+  price,
+}
+
+final productSortTypeProvider = StateProvider<ProductSortType>((ref) => ProductSortType.name);
+
+final futureProductsProvider = FutureProvider.autoDispose<List<Product>>(
+  (ref) async {
+    final sortType = ref.watch(productSortTypeProvider);
+    List<Product> sortedProducts = _products.toList();
+
+    switch (sortType) {
+      case ProductSortType.name:
+        sortedProducts.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case ProductSortType.price:
+        sortedProducts.sort((a, b) => a.price.compareTo(b.price));
+        break;
+    }
+
+    await Future.delayed(const Duration(seconds: 3));
+
+    return sortedProducts;
+  },
+);
+
+class ProductPage extends ConsumerWidget {
+  const ProductPage({Key? key}) : super(key: key);
+
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lista RSL',
-      home: MyHomePage(),
-    );
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final productsProvider = ref.watch(futureProductsProvider);
 
-class Actividad {
-  String descripcion;
-  bool completada;
-
-  Actividad({required this.descripcion, this.completada = false});
-}
-
-class MyHomePage extends StatefulWidget {
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  final List<Actividad> actividades = [];
-  final TextEditingController _textController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pendientes'),
+        title: const Text("Future Provider Example"),
+        actions: [
+          DropdownButton<ProductSortType>(
+            dropdownColor: Colors.brown,
+            value: ref.watch(productSortTypeProvider),
+            items: const [
+              DropdownMenuItem(
+                value: ProductSortType.name,
+                child: Icon(Icons.sort_by_alpha),
+              ),
+              DropdownMenuItem(
+                value: ProductSortType.price,
+                child: Icon(Icons.sort),
+              ),
+            ],
+            onChanged: (value) => ref.read(productSortTypeProvider),
+          ),
+        ],
       ),
-      body: ListView.builder(
-        itemCount: actividades.length,
-        itemBuilder: (context, index) {
-          return Dismissible(
-            direction: DismissDirection.horizontal,
-            background: Container(
-              color: Colors.blue,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Icon(Icons.delete),
-                ],
-              ),
-            ),
-            onDismissed: (direction) {
-              actividades.removeAt(index);
-              setState(() {});
-            },
-            key: Key(actividades[index].descripcion), 
-            child: ListTile(
-              title: Text(
-                actividades[index].descripcion,
-                style: TextStyle(
-                  decoration: actividades[index].completada
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                  color: const Color.fromARGB(255, 0, 0, 0),
-                ),
-              ),
-              trailing: IconButton(
-                icon: Icon(Icons.check_box),
-                onPressed: () {
-                  marcarActividadComoCompletada(index);
-                },
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Confirmar Actividad'),
-                content: TextField(
-                  controller: _textController,
-                  decoration: InputDecoration(labelText: 'Nueva actividad'),
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    child: Text('Cancelar'),
-                    onPressed: () {
-                      Navigator.of(context).pop(); 
-                    },
+      backgroundColor: Colors.lightBlue,
+      body: Container(
+        child: productsProvider.when(
+          data: (products) => ListView.builder(
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 10, right: 10, top: 10),
+                child: Card(
+                  color: Colors.blueAccent,
+                  elevation: 3,
+                  child: ListTile(
+                    title: Text(
+                      products[index].name,
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                    ),
+                    subtitle: Text(
+                      "${products[index].price}",
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                    ),
                   ),
-                  TextButton(
-                    child: Text('Confirmar'),
-                    onPressed: () {
-                      agregarActividad();
-                      Navigator.of(context).pop(); 
-                    },
-                  ),
-                ],
+                ),
               );
             },
-          );
-        },
-        tooltip: 'Agregar actividad',
-        child: Icon(Icons.add),
+          ),
+          error: (err, stack) => Text(
+            "Error: $err",
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+          ),
+          loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+        ),
       ),
     );
   }
+}
 
-  void agregarActividad() {
-    final nuevaActividad = _textController.text;
-    if (nuevaActividad.isNotEmpty) {
-      actividades.add(Actividad(descripcion: nuevaActividad));
-      _textController.clear();
-      setState(() {});
-    }
-  }
-
-  void marcarActividadComoCompletada(int index) {
-    setState(() {
-      actividades[index].completada = !actividades[index].completada;
-    });
-  }
+void main() {
+  runApp(
+    const ProviderScope(
+      child: MaterialApp(
+        home: ProductPage(),
+      ),
+    ),
+  );
 }
